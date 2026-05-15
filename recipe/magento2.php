@@ -8,6 +8,7 @@ require_once __DIR__ . '/../contrib/cachetool.php';
 use Deployer\Exception\ConfigurationException;
 use Deployer\Exception\GracefulShutdownException;
 use Deployer\Exception\RunException;
+use Deployer\Exception\TimeoutException;
 use Deployer\Host\Host;
 
 const CONFIG_IMPORT_NEEDED_EXIT_CODE = 2;
@@ -143,8 +144,8 @@ set('config_import_needed_on_current', function () {
         // detect if app:config:import is needed on the current (live) release
         // do not use {{bin/magento}} as it resolves via release_or_current_path which is unreliable in failure scenarios
         run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:status');
-    } catch (RunException $e) {
-        if ($e->getExitCode() == CONFIG_IMPORT_NEEDED_EXIT_CODE) {
+    } catch (RunException | TimeoutException $e) {
+        if ($e instanceof RunException && $e->getExitCode() == CONFIG_IMPORT_NEEDED_EXIT_CODE) {
             return true;
         }
 
@@ -353,7 +354,7 @@ task('magento:config:import:on-current', function () {
         } else {
             writeln('App config import skipped');
         }
-    } catch (RunException $e) {
+    } catch (RunException | TimeoutException $e) {
         writeln('Unable to import app config on current release => import skipped');
     }
 });
