@@ -351,7 +351,7 @@ task('magento:config:import:on-current', function () {
             // do not use {{bin/magento}} as it must run on the current (last successful) release in failure scenarios
             run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:import --no-interaction');
         } else {
-            writeln('App config is up to date => import skipped');
+            writeln('App config import skipped');
         }
     } catch (RunException $e) {
         writeln('Unable to import app config on current release => import skipped');
