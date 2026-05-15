@@ -143,7 +143,7 @@ set('config_import_needed_on_current', function () {
         // detect if app:config:import is needed on the current (live) release
         // do not use {{bin/magento}} as it resolves via release_or_current_path which is unreliable in failure scenarios
         run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:status');
-    } catch (RunException | TimeoutException $e) {
+    } catch (RunException|TimeoutException $e) {
         if ($e instanceof RunException && $e->getExitCode() == CONFIG_IMPORT_NEEDED_EXIT_CODE) {
             return true;
         }
@@ -330,9 +330,9 @@ task('magento:maintenance:disable', function () {
 
 desc('Set maintenance mode if needed');
 task('magento:maintenance:enable-if-needed', function () {
-    ! get('enable_zerodowntime') || get('upgrade_needed') || get('config_import_needed') ?
-        invoke('magento:maintenance:enable') :
-        writeln('Config and database up to date => no maintenance mode');
+    ! get('enable_zerodowntime') || get('upgrade_needed') || get('config_import_needed')
+        ? invoke('magento:maintenance:enable')
+        : writeln('Config and database up to date => no maintenance mode');
 });
 
 desc('Config Import');
@@ -353,7 +353,7 @@ task('magento:config:import:on-current', function () {
         } else {
             writeln('App config import skipped');
         }
-    } catch (RunException | TimeoutException $e) {
+    } catch (RunException|TimeoutException $e) {
         writeln('Unable to import app config on current release => import skipped');
     }
 });
