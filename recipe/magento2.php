@@ -372,7 +372,6 @@ after('deploy:symlink', 'magento:cache:flush');
 
 after('deploy:failed', 'deploy:magento:failed');
 
-//Run Magento Deployment Failure Tasks
 desc('Run magento post deployment failure tasks.');
 task('deploy:magento:failed', [
     'magento:config:import',
