@@ -133,7 +133,7 @@ set('config_import_needed', function () {
 });
 
 set('config_import_needed_on_current', function () {
-   
+
     if (!test('[ -d {{current_path}}/{{magento_dir}} ] && [ -f {{current_path}}/{{magento_dir}}/bin/magento ]')) {
         writeln('Current Magento installation is unavailable => import skipped');
         return false;
