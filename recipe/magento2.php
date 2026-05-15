@@ -106,6 +106,9 @@ set('clear_paths', [
     '{{magento_dir}}/var/view_preprocessed/*',
 ]);
 
+// WARNING: Do not use {{bin/magento}} in deploy:failed handlers - release_or_current_path points to the failed
+// release during failure, not the live one. Use {{current_path}} explicitly instead.
+// See: config_import_needed_on_current, magento:config:import:on-current, magento:maintenance:enable/disable.
 set('bin/magento', '{{release_or_current_path}}/{{magento_dir}}/bin/magento');
 
 set('magento_version', function () {
@@ -119,6 +122,21 @@ set('config_import_needed', function () {
     // detect if app:config:import is needed
     try {
         run('{{bin/php}} {{bin/magento}} app:config:status');
+    } catch (RunException $e) {
+        if ($e->getExitCode() == CONFIG_IMPORT_NEEDED_EXIT_CODE) {
+            return true;
+        }
+
+        throw $e;
+    }
+    return false;
+});
+
+set('config_import_needed_on_current', function () {
+    // detect if app:config:import is needed on the current (live) release
+    // do not use {{bin/magento}} as it resolves via release_or_current_path which is unreliable in failure scenarios
+    try {
+        run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:status');
     } catch (RunException $e) {
         if ($e->getExitCode() == CONFIG_IMPORT_NEEDED_EXIT_CODE) {
             return true;
@@ -318,6 +336,16 @@ task('magento:config:import', function () {
     }
 });
 
+desc('Config Import on current release');
+task('magento:config:import:on-current', function () {
+    if (get('config_import_needed_on_current')) {
+        // do not use {{bin/magento}} as it must run on the current (last successful) release in failure scenarios
+        run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:import --no-interaction');
+    } else {
+        writeln('App config is up to date => import skipped');
+    }
+});
+
 desc('Upgrades magento database');
 task('magento:upgrade:db', function () {
     if (get('database_upgrade_needed')) {
@@ -374,7 +402,7 @@ after('deploy:failed', 'deploy:magento:failed');
 
 desc('Run magento post deployment failure tasks.');
 task('deploy:magento:failed', [
-    'magento:config:import',
+    'magento:config:import:on-current',
     'magento:maintenance:disable',
 ]);
 
