@@ -133,16 +133,24 @@ set('config_import_needed', function () {
 });
 
 set('config_import_needed_on_current', function () {
-    // detect if app:config:import is needed on the current (live) release
-    // do not use {{bin/magento}} as it resolves via release_or_current_path which is unreliable in failure scenarios
+   
+    if (!test('[ -d {{current_path}}/{{magento_dir}} ] && [ -f {{current_path}}/{{magento_dir}}/bin/magento ]')) {
+        writeln('Current Magento installation is unavailable => import skipped');
+        return false;
+    }
+
     try {
+        // detect if app:config:import is needed on the current (live) release
+        // do not use {{bin/magento}} as it resolves via release_or_current_path which is unreliable in failure scenarios
         run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:status');
     } catch (RunException $e) {
         if ($e->getExitCode() == CONFIG_IMPORT_NEEDED_EXIT_CODE) {
             return true;
         }
 
-        throw $e;
+        // In failure scenarios, non-status errors should not break deploy:failed handlers.
+        writeln('Unable to determine app config status on current release => import skipped');
+        return false;
     }
     return false;
 });
@@ -338,11 +346,15 @@ task('magento:config:import', function () {
 
 desc('Config Import on current release');
 task('magento:config:import:on-current', function () {
-    if (get('config_import_needed_on_current')) {
-        // do not use {{bin/magento}} as it must run on the current (last successful) release in failure scenarios
-        run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:import --no-interaction');
-    } else {
-        writeln('App config is up to date => import skipped');
+    try {
+        if (get('config_import_needed_on_current')) {
+            // do not use {{bin/magento}} as it must run on the current (last successful) release in failure scenarios
+            run('{{bin/php}} {{current_path}}/{{magento_dir}}/bin/magento app:config:import --no-interaction');
+        } else {
+            writeln('App config is up to date => import skipped');
+        }
+    } catch (RunException $e) {
+        writeln('Unable to import app config on current release => import skipped');
     }
 });
 
